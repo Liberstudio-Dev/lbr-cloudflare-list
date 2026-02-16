@@ -9,9 +9,8 @@
 5. Salvare il token API senza scadenza
 6. Domains > Scegliere il dominio da utilizzare 
 7. Andare nella categoria Security > Security Rules > Create rule > Custom Rules
-8. Nome: <Name>, Field: <IP Source Address , is in, scegli la lista creata prima>, Action: <Block> 
+8. Nome: <Name>, Field: <IP Source Address , is in, scegli la lista creata prima>, Action: Block 
 9. Salvare la regola
-10. Creare un token API
 
 ## Installazione
 
