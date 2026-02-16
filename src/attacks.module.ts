@@ -1,14 +1,20 @@
-import { DynamicModule, Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
-import { AttacksService } from './attacks.service';
-import type { CloudflareAttacksAsyncOptions, CloudflareAttacksOptions } from './interfaces';
+import { DynamicModule, type MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { HttpModule } from "@nestjs/axios";
+
+import { AttacksService } from "./attacks.service";
+import { AttackLoggerMiddleware } from "./middleware";
+
+import type { CloudflareAttacksAsyncOptions, CloudflareAttacksOptions } from "./interfaces";
 
 @Module({
   imports: [HttpModule],
-  providers: [AttacksService],
+  providers: [AttacksService, AttackLoggerMiddleware],
   exports: [AttacksService, HttpModule],
 })
-export class CloudflareAttacksModule {
+export class CloudflareAttacksModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AttackLoggerMiddleware).forRoutes("*"); // Oppure specifica rotte precise
+  }
 
   static forRoot(options: CloudflareAttacksOptions): DynamicModule {
     return {
@@ -16,7 +22,7 @@ export class CloudflareAttacksModule {
       imports: [HttpModule],
       providers: [
         {
-          provide: 'CLOUDFLARE_OPTIONS',
+          provide: "CLOUDFLARE_OPTIONS",
           useValue: options,
         },
       ],
@@ -29,7 +35,7 @@ export class CloudflareAttacksModule {
       imports: [HttpModule, ...(options.imports || [])],
       providers: [
         {
-          provide: 'CLOUDFLARE_OPTIONS',
+          provide: "CLOUDFLARE_OPTIONS",
           useFactory: options.useFactory,
           inject: options.inject || [],
         },
