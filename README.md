@@ -39,3 +39,25 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
 })
 export class AppModule {}
 ```
+
+## Versione Asincrona con ConfigModule
+
+```typescript
+import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
+
+@Module({
+  imports: [
+    CloudflareAttacksModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        apiToken: config.getOrThrow<string>('CLOUDFLARE_API_TOKEN'),
+        accountId: config.getOrThrow<string>('CLOUDFLARE_ACCOUNT_ID'),
+        listId: config.getOrThrow<string>('CLOUDFLARE_LIST_ID'),
+        comment: config.get<string>('CLOUDFLARE_LIST_COMMENT') || 'Blocked'
+      })
+    }),
+  ],
+})
+export class AppModule {}
+```
