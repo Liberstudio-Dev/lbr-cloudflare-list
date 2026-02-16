@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "npx tsc",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
@@ -24,6 +24,7 @@
     "axios": ">=1.0.0"
   },
   "devDependencies": {
-    "simple-git-hooks": "^2.13.1"
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^5.9.3"
   }
 }
