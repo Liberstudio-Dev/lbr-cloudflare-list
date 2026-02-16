@@ -11,12 +11,18 @@
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
+  "simple-git-hooks": {
+    "pre-commit": "npm run version:bump && git add package.json package-lock.json"
+  },
   "dependencies": {
     "rxjs": "^7.0.0"
   },
   "peerDependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/axios": "^3.0.0",
-    "axios": "^1.0.0"
+    "@nestjs/axios": ">=3.0.0",
+    "@nestjs/common": ">=10.0.0",
+    "axios": ">=1.0.0"
+  },
+  "devDependencies": {
+    "simple-git-hooks": "^2.13.1"
   }
 }
