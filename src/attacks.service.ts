@@ -5,7 +5,11 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
-import type { CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
+import type {
+  CloudflareAttacksOptions,
+  CloudflareErrorData,
+  CloudflareResponse,
+} from "./interfaces";
 
 @Injectable()
 export class AttacksService {
@@ -19,13 +23,11 @@ export class AttacksService {
   ) {}
 
   async updateIpList(ip: string) {
-    this.logger.debug(`Options al momento della chiamata: ${JSON.stringify(this.options)}`);
+    const apiToken = this.options.apiToken.trim();
+    const accountId = this.options.accountId.trim();
+    const listId = this.options.listId.trim();
+    const comment = this.options.comment || "Auto-blocked";
 
-    if (!this.options || !this.options.apiToken) {
-      this.logger.error("Sincronizzazione fallita: Le opzioni Cloudflare non sono ancora pronte.");
-      return;
-    }
-    const { accountId, listId, apiToken, comment } = this.options;
     const url = `${this.API_URL}/${accountId}/rules/lists/${listId}/items`;
 
     this.logger.error(`Aggiungo IP ${ip} alla lista Cloudflare`);
@@ -48,7 +50,8 @@ export class AttacksService {
       if (axios.isAxiosError(error)) {
         const data = error.response?.data as CloudflareErrorData | undefined;
 
-        const message: string = data?.errors?.[0]?.message || "Errore Cloudflare API";
+        const message: string =
+          data?.errors?.[0]?.message || "Errore Cloudflare API";
         const status: number = error.response?.status || 500;
 
         throw new HttpException(message, status);
