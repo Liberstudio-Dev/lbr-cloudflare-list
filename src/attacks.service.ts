@@ -36,14 +36,13 @@ export class AttacksService {
     const body = [{ ip: formattedIp, comment }];
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.post<CloudflareResponse>(url, body, {
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-            "Content-Type": "application/json",
-          },
-        }),
-      );
+      const response = await axios.post(url, body, {
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json", // Aggiungi questo esplicitamente
+        },
+      });
 
       return response.data;
     } catch (error: unknown) {
