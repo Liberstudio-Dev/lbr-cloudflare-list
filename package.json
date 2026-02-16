@@ -1,6 +1,6 @@
 {
-  "name": "@lbr/cloudflare-list",
-  "version": "2.0.1",
+  "name": "@liberstudio/cloudflare-list",
+  "version": "2.0.2",
   "description": "Modulo NestJS per gestione IP List Cloudflare",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,25 +9,30 @@
   ],
   "scripts": {
     "build": "npx tsc",
-    "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "version:bump": "npm version patch --no-git-tag-version"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run version:bump && git add package.json package-lock.json"
   },
-  "dependencies": {
-    "rxjs": "^7.0.0"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@nestjs/axios": ">=3.0.0",
     "@nestjs/common": ">=10.0.0",
-    "axios": ">=1.0.0"
+    "axios": ">=1.0.0",
+    "rxjs": ">=7.0.0"
   },
   "devDependencies": {
+    "@nestjs/axios": ">=3.0.0",
+    "@nestjs/common": ">=10.0.0",
+    "axios": ">=1.0.0",
+    "rxjs": "^7.8.0",
     "@types/express": "^5.0.6",
     "@types/node": "^20.9.0",
     "simple-git-hooks": "^2.13.1",
-    "typescript": "^5.9.3"
+    "typescript": ">=5.0.0"
   }
 }
