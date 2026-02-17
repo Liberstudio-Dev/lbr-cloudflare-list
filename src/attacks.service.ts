@@ -5,11 +5,7 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
-import type {
-  CloudflareAttacksOptions,
-  CloudflareErrorData,
-  CloudflareResponse,
-} from "./interfaces";
+import type { CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
 @Injectable()
 export class AttacksService {
@@ -23,11 +19,7 @@ export class AttacksService {
   ) {}
 
   async updateIpList(ip: string) {
-    const apiToken = this.options.apiToken.trim();
-    const accountId = this.options.accountId.trim();
-    const listId = this.options.listId.trim();
-    const comment = this.options.comment || "Auto-blocked";
-
+    const { accountId, listId, apiToken, comment } = this.options;
     const url = `${this.API_URL}/${accountId}/rules/lists/${listId}/items`;
 
     this.logger.error(`Aggiungo IP ${ip} alla lista Cloudflare`);
@@ -36,21 +28,21 @@ export class AttacksService {
     const body = [{ ip: formattedIp, comment }];
 
     try {
-      const response = await axios.post(url, body, {
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json", // Aggiungi questo esplicitamente
-        },
-      });
+      const response = await firstValueFrom(
+        this.httpService.post<CloudflareResponse>(url, body, {
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      );
 
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const data = error.response?.data as CloudflareErrorData | undefined;
 
-        const message: string =
-          data?.errors?.[0]?.message || "Errore Cloudflare API";
+        const message: string = data?.errors?.[0]?.message || "Errore Cloudflare API";
         const status: number = error.response?.status || 500;
 
         throw new HttpException(message, status);

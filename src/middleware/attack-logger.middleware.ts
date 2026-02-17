@@ -15,7 +15,7 @@ export class AttackLoggerMiddleware implements NestMiddleware {
       if (res.statusCode === 404) {
         this.processSuspiciousRequest(req).catch((err: unknown) => {
           const msg = err instanceof Error ? err.message : "Unknown error";
-          this.logger.error(`Errore nel processando attacco: ${msg}`);
+          this.logger.error(`Errore nel processando la richiesta verso Cloudflare: ${msg}`);
         });
       }
     });
