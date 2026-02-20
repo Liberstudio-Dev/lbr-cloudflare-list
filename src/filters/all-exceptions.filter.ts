@@ -29,11 +29,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       stack: exception instanceof Error ? exception.stack : undefined,
     };
+    const isMissingToken = message === "Invalid or missing token";
 
     if (status >= 500) {
-      this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
+      this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, isMissingToken ? null : JSON.stringify(errorLog, null, 2));
     } else {
-      this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
+      this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, isMissingToken ? null : JSON.stringify(errorLog, null, 2));
     }
 
     response.status(status).json({
