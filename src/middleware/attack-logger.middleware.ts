@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, NestMiddleware, OnModuleDestroy } from "@nestjs/common";
 import { createWriteStream, WriteStream, mkdirSync, existsSync } from "fs";
-import { dirname, resolve, join } from "path";
+import { dirname, resolve } from "path";
 import { AttacksService } from "../attacks.service";
 import { CLOUDFLARE_OPTIONS } from "../utils";
 
@@ -25,17 +25,17 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       throw new Error("CloudflareAttacksOptions.logPath deve essere una stringa valida");
     }
 
-    const logPath = join(process.cwd(), options.logPath);
-    this.ensureDirectoryExists(logPath);
+    const absolutePath = resolve(options.logPath);
+    this.ensureDirectoryExists(absolutePath);
 
-    this.stream = createWriteStream(logPath, {
+    this.stream = createWriteStream(absolutePath, {
       flags: "a",
       encoding: "utf8",
       highWaterMark: 64 * 1024,
     });
 
     this.stream.on("error", (err) => {
-      this.logger.error(`Errore nello stream del log (${logPath}): ${err.message}`);
+      this.logger.error(`Errore nello stream del log (${absolutePath}): ${err.message}`);
     });
   }
 
