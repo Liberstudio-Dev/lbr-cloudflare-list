@@ -56,7 +56,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         accountId: config.getOrThrow<string>('CLOUDFLARE_ACCOUNT_ID'),
         listId: config.getOrThrow<string>('CLOUDFLARE_LIST_ID'),
         comment: config.get<string>('CLOUDFLARE_LIST_COMMENT') || 'Blocked',
-        logPath: config.get<string>('CLOUDFLARE_LIST_LOG_PATH') || 'Blocked',
+        logPath: config.get<string>('CLOUDFLARE_LIST_LOG_PATH') || '/var/log/nestjs-attacks.log',
       })
     }),
   ],
