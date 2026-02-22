@@ -1,0 +1,1 @@
+export const CLOUDFLARE_OPTIONS = Symbol('CLOUDFLARE_OPTIONS');

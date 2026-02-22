@@ -5,6 +5,7 @@ import { APP_FILTER } from "@nestjs/core";
 import { AllExceptionsFilter } from "./filters";
 import { AttacksService } from "./attacks.service";
 import { AttackLoggerMiddleware } from "./middleware";
+import { CLOUDFLARE_OPTIONS, validateOptions } from "./utils";
 
 import type { CloudflareAttacksAsyncOptions, CloudflareAttacksOptions } from "./interfaces";
 
@@ -26,12 +27,14 @@ export class CloudflareAttacksModule implements NestModule {
   }
 
   static forRoot(options: CloudflareAttacksOptions): DynamicModule {
+    validateOptions(options);
+
     return {
       module: CloudflareAttacksModule,
       imports: [HttpModule],
       providers: [
         {
-          provide: "CLOUDFLARE_OPTIONS",
+          provide: CLOUDFLARE_OPTIONS,
           useValue: options,
         },
       ],
@@ -44,8 +47,12 @@ export class CloudflareAttacksModule implements NestModule {
       imports: [HttpModule, ...(options.imports || [])],
       providers: [
         {
-          provide: "CLOUDFLARE_OPTIONS",
-          useFactory: options.useFactory,
+          provide: CLOUDFLARE_OPTIONS,
+          useFactory: async (...args: any[]) => {
+            const opts = await options.useFactory(...args);
+            validateOptions(opts);
+            return opts;
+          },
           inject: options.inject || [],
         },
       ],

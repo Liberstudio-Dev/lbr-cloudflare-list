@@ -1,6 +1,6 @@
 {
   "name": "@liberstudio/cloudflare-list",
-  "version": "2.0.14",
+  "version": "2.0.15",
   "description": "Modulo NestJS per gestione IP List Cloudflare",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

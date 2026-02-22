@@ -1,78 +1,92 @@
-import * as fs from "fs/promises";
-import { Injectable, Logger, NestMiddleware } from "@nestjs/common";
-import { NextFunction, Request, Response } from "express";
+import { Inject, Injectable, Logger, NestMiddleware, OnModuleDestroy } from "@nestjs/common";
+import { createWriteStream, WriteStream, mkdirSync, existsSync } from "fs";
+import { dirname, resolve } from "path";
 import { AttacksService } from "../attacks.service";
+import { CLOUDFLARE_OPTIONS } from "../utils";
+
+import type { NextFunction, Request, Response } from "express";
+import type { CloudflareAttacksOptions } from "../interfaces";
 
 @Injectable()
-export class AttackLoggerMiddleware implements NestMiddleware {
-  private readonly logger = new Logger("AttackLogger");
-  private readonly logPath = "/var/log/nestjs-attacks.log";
+export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
+  private readonly logger = new Logger(AttackLoggerMiddleware.name);
 
-  // Throttle per IP: evita flood verso Cloudflare
-  private readonly recentIps = new Map<string, number>();
-  private readonly THROTTLE_MS = 5_000;
+  private readonly recentIps = new Map<string, NodeJS.Timeout>();
+  private readonly throttleMs = 5_000;
 
-  // Coda serializzata (fire-and-forget, non awaited dall'esterno)
-  private writeQueue: Promise<void> = Promise.resolve();
+  private readonly stream: WriteStream;
 
-  constructor(private readonly attSrv: AttacksService) {}
+  constructor(
+    private readonly attSrv: AttacksService,
+    @Inject(CLOUDFLARE_OPTIONS)
+    private readonly options: CloudflareAttacksOptions,
+  ) {
+    if (!options.logPath || typeof options.logPath !== "string") {
+      throw new Error("CloudflareAttacksOptions.logPath deve essere una stringa valida");
+    }
 
-  use(req: Request, res: Response, next: NextFunction) {
+    const absolutePath = resolve(options.logPath);
+    this.ensureDirectoryExists(absolutePath);
+
+    this.stream = createWriteStream(absolutePath, {
+      flags: "a",
+      encoding: "utf8",
+      highWaterMark: 64 * 1024,
+    });
+
+    this.stream.on("error", (err) => {
+      this.logger.error(`Errore nello stream del log (${absolutePath}): ${err.message}`);
+    });
+  }
+
+  use(req: Request, res: Response, next: NextFunction): void {
     res.on("finish", () => {
       if (res.statusCode === 404) {
-        this.enqueue(req);
+        this.handleSuspicious(req);
       }
     });
+
     next();
   }
 
-  private enqueue(req: Request): void {
-    this.writeQueue = this.writeQueue
-      .then(() => this.processSuspiciousRequest(req))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        this.logger.error(`Errore processing richiesta: ${msg}`);
-      });
-  }
-
-  private async processSuspiciousRequest(req: Request): Promise<void> {
+  private handleSuspicious(req: Request): void {
     const ip = this.getClientIp(req);
-    if (ip === "unknown") return;
+    if (!ip || this.isThrottled(ip)) return;
 
-    if (this.isThrottled(ip)) return;
+    const entry = {
+      timestamp: new Date().toISOString(),
+      type: "ATTACK",
+      ip,
+      method: req.method,
+      url: this.sanitize(req.url),
+    };
 
-    const safeUrl = req.url.replace(/[\r\n]/g, "_");
-    const logEntry = `${new Date().toISOString()} [ATTACK] IP=${ip} METHOD=${req.method} URL=${safeUrl}\n`;
+    const line = JSON.stringify(entry) + "\n";
 
-    this.logger.debug(logEntry.trimEnd());
+    if (!this.stream.write(line)) {
+      this.stream.once("drain", () => {
+        this.logger.debug("Stream del log degli attacchi svuotato");
+      });
+    }
 
-    // Esegue in parallelo: log su file + update Cloudflare
-    await Promise.allSettled([
-      fs.appendFile(this.logPath, logEntry).catch((error: unknown) => {
-        const msg = error instanceof Error ? error.message : "FS Error";
-        this.logger.error(
-          `Impossibile scrivere log su ${this.logPath}: ${msg}`,
-        );
-      }),
-      this.attSrv.updateIpList(ip).catch((error: unknown) => {
-        const msg = error instanceof Error ? error.message : "Service Error";
-        this.logger.error(`Impossibile aggiornare IP list: ${msg}`);
-      }),
-    ]);
+    this.attSrv.updateIpList(ip).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Errore sconosciuto";;
+      this.logger.error(`Aggiornamento Cloudflare fallito: ${msg}`);
+    });
   }
 
   private isThrottled(ip: string): boolean {
-    const now = Date.now();
-    const last = this.recentIps.get(ip);
-    if (last && now - last < this.THROTTLE_MS) return true;
+    if (this.recentIps.has(ip)) return true;
 
-    if (this.recentIps.size > 10_000) this.recentIps.clear();
+    const timeout = setTimeout(() => {
+      this.recentIps.delete(ip);
+    }, this.throttleMs);
 
-    this.recentIps.set(ip, now);
+    this.recentIps.set(ip, timeout);
     return false;
   }
 
-  private getClientIp(req: Request): string {
+  private getClientIp(req: Request): string | null {
     const cfIp = req.headers["cf-connecting-ip"];
     if (typeof cfIp === "string") return cfIp;
 
@@ -84,6 +98,26 @@ export class AttackLoggerMiddleware implements NestMiddleware {
       return xForwardedFor.split(",")[0].trim();
     }
 
-    return req.socket.remoteAddress ?? "unknown";
+    return req.socket.remoteAddress ?? null;
+  }
+
+  private sanitize(value: string): string {
+    return value.replace(/[\r\n]/g, "_");
+  }
+
+  private ensureDirectoryExists(filePath: string): void {
+    const dir = dirname(filePath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+      this.logger.log(`Cartella dei log creata: ${dir}`);
+    }
+  }
+
+  onModuleDestroy(): void {
+    this.stream.end();
+    for (const timeout of this.recentIps.values()) {
+      clearTimeout(timeout);
+    }
+    this.recentIps.clear();
   }
 }

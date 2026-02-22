@@ -4,6 +4,7 @@ export interface CloudflareAttacksOptions {
   accountId: string;
   listId: string;
   comment: string;
+  logPath: string;
 }
 
 export interface CloudflareAttacksAsyncOptions {

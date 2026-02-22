@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from "@nestjs/common";
-import { Request, Response } from "express";
 import { getClientIp } from "../utils/get-client-ip.util";
+
+import type { Request, Response } from "express";
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -29,13 +30,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       stack: exception instanceof Error ? exception.stack : undefined,
     };
-    const isMissingToken = message === "Invalid or missing token";
 
-    if (status >= 500) {
+    /* const isMissingToken = message === "Invalid or missing token"; */
+
+    this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`);
+    /*     if (status >= 500) {
       this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, isMissingToken ? null : JSON.stringify(errorLog, null, 2));
     } else {
       this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, isMissingToken ? null : JSON.stringify(errorLog, null, 2));
-    }
+    } */
 
     response.status(status).json({
       statusCode: status,

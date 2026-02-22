@@ -5,6 +5,8 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
+import { CLOUDFLARE_OPTIONS } from "./utils";
+
 import type { CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
 @Injectable()
@@ -14,7 +16,7 @@ export class AttacksService {
 
   constructor(
     private readonly httpService: HttpService,
-    @Inject("CLOUDFLARE_OPTIONS")
+    @Inject(CLOUDFLARE_OPTIONS)
     private readonly options: CloudflareAttacksOptions,
   ) {}
 
