@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, NestMiddleware, OnModuleDestroy } from "@ne
 import { createWriteStream, WriteStream, mkdirSync, existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { AttacksService } from "../attacks.service";
-import { CLOUDFLARE_OPTIONS, getClientIp, toCidr } from "../utils";
+import { CLOUDFLARE_OPTIONS, getClientIp, normalizeIp } from "../utils";
 
 import type { NextFunction, Request, Response } from "express";
 import type { CloudflareAttacksOptions } from "../interfaces";
@@ -69,8 +69,11 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       });
     }
 
-    const cidr = toCidr(ip);
-    if (!cidr) return;
+    const cidr = normalizeIp(ip);
+    if (!cidr) {
+      this.logger.warn(`IP non valido: ${ip}`);
+      return;
+    }
 
     this.attSrv.updateIpList(cidr).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : "Errore sconosciuto";
