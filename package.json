@@ -1,6 +1,6 @@
 {
   "name": "@liberstudio/cloudflare-list",
-  "version": "2.0.18",
+  "version": "2.1.9",
   "description": "Modulo NestJS per gestione IP List Cloudflare",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,14 +15,14 @@
   "scripts": {
     "build": "npx tsc",
     "prepublishOnly": "npm run build",
-    "version:bump": "npm version patch --no-git-tag-version",
+    "version:bump": "npx tsx src/scripts/version-bump.ts",
     "pub": "npm publish --access public"
   },
   "publishConfig": {
     "access": "public"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run version:bump && git add package.json package-lock.json"
+    "pre-commit": "source ~/.bashrc && npm run version:bump && git add package.json package-lock.json"
   },
   "peerDependencies": {
     "@nestjs/axios": ">=3.0.0",

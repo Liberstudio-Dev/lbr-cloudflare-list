@@ -14,3 +14,19 @@ export function getClientIp(req: Request): string {
 
   return req.socket.remoteAddress ?? "unknown";
 }
+
+export function toCidr(ip: string): string | null {
+  if (!ip) return null;
+
+  // IPv6
+  if (ip.includes(":")) {
+    return `${ip}/128`;
+  }
+
+  // IPv4
+  if (ip.includes(".")) {
+    return `${ip}/32`;
+  }
+
+  return null;
+}

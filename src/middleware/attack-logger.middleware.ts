@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, NestMiddleware, OnModuleDestroy } from "@ne
 import { createWriteStream, WriteStream, mkdirSync, existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { AttacksService } from "../attacks.service";
-import { CLOUDFLARE_OPTIONS } from "../utils";
+import { CLOUDFLARE_OPTIONS, getClientIp, toCidr } from "../utils";
 
 import type { NextFunction, Request, Response } from "express";
 import type { CloudflareAttacksOptions } from "../interfaces";
@@ -50,7 +50,7 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
   }
 
   private handleSuspicious(req: Request): void {
-    const ip = this.getClientIp(req);
+    const ip = getClientIp(req);
     if (!ip || this.isThrottled(ip)) return;
 
     const entry = {
@@ -69,8 +69,11 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       });
     }
 
-    this.attSrv.updateIpList(ip).catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : "Errore sconosciuto";;
+    const cidr = toCidr(ip);
+    if (!cidr) return;
+
+    this.attSrv.updateIpList(cidr).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Errore sconosciuto";
       this.logger.error(`Aggiornamento Cloudflare fallito: ${msg}`);
     });
   }
@@ -84,21 +87,6 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
 
     this.recentIps.set(ip, timeout);
     return false;
-  }
-
-  private getClientIp(req: Request): string | null {
-    const cfIp = req.headers["cf-connecting-ip"];
-    if (typeof cfIp === "string") return cfIp;
-
-    const xRealIp = req.headers["x-real-ip"];
-    if (typeof xRealIp === "string") return xRealIp;
-
-    const xForwardedFor = req.headers["x-forwarded-for"];
-    if (typeof xForwardedFor === "string") {
-      return xForwardedFor.split(",")[0].trim();
-    }
-
-    return req.socket.remoteAddress ?? null;
   }
 
   private sanitize(value: string): string {
