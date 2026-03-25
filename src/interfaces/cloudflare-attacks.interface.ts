@@ -5,6 +5,7 @@ export interface CloudflareAttacksOptions {
   listId: string;
   comment: string;
   logPath: string;
+  excludedPaths?: (string | RegExp)[];
 }
 
 export interface CloudflareAttacksAsyncOptions {

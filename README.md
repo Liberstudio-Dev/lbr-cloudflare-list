@@ -35,6 +35,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       apiToken: "<api_token>",
       comment: "<comment>",
       logPath: "<logPath>",
+      excludedPaths: "<excludedList>",
     }),
   ],
 })
@@ -52,12 +53,13 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        apiToken: config.getOrThrow<string>('CLOUDFLARE_API_TOKEN'),
-        accountId: config.getOrThrow<string>('CLOUDFLARE_ACCOUNT_ID'),
-        listId: config.getOrThrow<string>('CLOUDFLARE_LIST_ID'),
-        comment: config.get<string>('CLOUDFLARE_LIST_COMMENT') || 'Blocked',
-        logPath: config.get<string>('CLOUDFLARE_LIST_LOG_PATH') || '/var/log/nestjs-attacks.log',
-      })
+        apiToken: config.getOrThrow<string>("CLOUDFLARE_API_TOKEN"),
+        accountId: config.getOrThrow<string>("CLOUDFLARE_ACCOUNT_ID"),
+        listId: config.getOrThrow<string>("CLOUDFLARE_LIST_ID"),
+        comment: config.get<string>("CLOUDFLARE_LIST_COMMENT") || "Blocked",
+        logPath: config.get<string>("CLOUDFLARE_LIST_LOG_PATH") || "/var/log/nestjs-attacks.log",
+        excludedPaths: ["/api/health", "/api/webhook", /^\/api\/public\/.*/],
+      }),
     }),
   ],
 })
@@ -65,4 +67,5 @@ export class AppModule {}
 ```
 
 ## License
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

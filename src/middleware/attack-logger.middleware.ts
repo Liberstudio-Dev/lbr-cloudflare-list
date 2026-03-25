@@ -41,7 +41,7 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
 
   use(req: Request, res: Response, next: NextFunction): void {
     res.on("finish", () => {
-      if (res.statusCode === 404) {
+      if (res.statusCode === 404 && !this.isExcluded(req.url)) {
         this.handleSuspicious(req);
       }
     });
@@ -102,6 +102,11 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       mkdirSync(dir, { recursive: true });
       this.logger.log(`Cartella dei log creata: ${dir}`);
     }
+  }
+
+  private isExcluded(url: string): boolean {
+    const excluded = this.options.excludedPaths ?? [];
+    return excluded.some((p) => (p instanceof RegExp ? p.test(url) : url.startsWith(p)));
   }
 
   onModuleDestroy(): void {
