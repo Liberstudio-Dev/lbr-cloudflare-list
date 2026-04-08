@@ -14,10 +14,10 @@ import type { CloudflareAttacksAsyncOptions, CloudflareAttacksOptions } from "./
   providers: [
     AttacksService,
     AttackLoggerMiddleware,
-    /* {
+    {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
-    }, */
+    },
   ],
   exports: [AttacksService, HttpModule],
 })

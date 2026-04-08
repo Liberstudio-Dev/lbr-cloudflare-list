@@ -19,7 +19,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message = exception instanceof HttpException ? exception.getResponse() : "Internal server error";
+    const message = exception instanceof HttpException ? exception.getResponse() : exception instanceof Error ? exception.message : "Internal server error";
 
     const ip = getClientIp(request);
 
@@ -38,12 +38,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     /* const isMissingToken = message === "Invalid or missing token"; */
 
-    this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`);
-    /*     if (status >= 500) {
-      this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, isMissingToken ? null : JSON.stringify(errorLog, null, 2));
+    if (status >= 500) {
+      this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
     } else {
-      this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, isMissingToken ? null : JSON.stringify(errorLog, null, 2));
-    } */
+      this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
+    }
 
     response.status(status).json({
       statusCode: status,
