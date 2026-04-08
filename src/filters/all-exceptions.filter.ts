@@ -12,6 +12,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
+    // ✅ SuperTokens gestisce i propri errori autonomamente
+    if (request.url.startsWith("/auth")) {
+      return;
+    }
+
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message = exception instanceof HttpException ? exception.getResponse() : "Internal server error";
