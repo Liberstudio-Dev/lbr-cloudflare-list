@@ -38,10 +38,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     /* const isMissingToken = message === "Invalid or missing token"; */
 
+    
+
     if (status >= 500) {
       this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
     } else {
-      this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
+      this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`);
+      // this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, JSON.stringify(errorLog, null, 2));
     }
 
     response.status(status).json({
