@@ -16,7 +16,8 @@ import type { CloudflareAttacksAsyncOptions, CloudflareAttacksOptions } from "./
     AttackLoggerMiddleware,
     {
       provide: APP_FILTER,
-      useClass: AllExceptionsFilter,
+      useFactory: (options?: CloudflareAttacksOptions) => new AllExceptionsFilter(options),
+      inject: [{ token: CLOUDFLARE_OPTIONS, optional: true }],
     },
   ],
   exports: [AttacksService, HttpModule],

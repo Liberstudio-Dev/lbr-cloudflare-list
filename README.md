@@ -36,6 +36,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       comment: "<comment>",
       logPath: "<logPath>",
       excludedPaths: "<excludedList>",
+      silentPaths: "<silentList>",
     }),
   ],
 })
@@ -59,6 +60,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         comment: config.get<string>("CLOUDFLARE_LIST_COMMENT") || "Blocked",
         logPath: config.get<string>("CLOUDFLARE_LIST_LOG_PATH") || "/var/log/nestjs-attacks.log",
         excludedPaths: ["/api/health", "/api/webhook", /^\/api\/public\/.*/],
+        silentPaths: ["/auth/me", "/auth/refresh"],
       }),
     }),
   ],
