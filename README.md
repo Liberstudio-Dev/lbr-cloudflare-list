@@ -37,6 +37,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       logPath: "<logPath>",
       excludedPaths: "<excludedList>",
       silentPaths: "<silentList>",
+      verbose: false, // default: false — log solo riga breve; true = log completo con body, query, stack
     }),
   ],
 })
@@ -61,6 +62,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         logPath: config.get<string>("CLOUDFLARE_LIST_LOG_PATH") || "/var/log/nestjs-attacks.log",
         excludedPaths: ["/api/health", "/api/webhook", /^\/api\/public\/.*/],
         silentPaths: ["/auth/me", "/auth/refresh"],
+        verbose: false, // default: false — log solo riga breve; true = log completo con body, query, stack
       }),
     }),
   ],
