@@ -53,9 +53,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (!isSilentPath) {
       const verbose = this.options?.verbose === true;
       if (status >= 500) {
-        this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, verbose ? JSON.stringify(errorLog, null, 2) : undefined);
+        this.logger.error(`[${ip}] [${request.method}] ${request.url} → ${status}`, verbose ? JSON.stringify(errorLog, null, 2) : message);
       } else {
-        this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, verbose ? JSON.stringify(errorLog, null, 2) : undefined);
+        this.logger.warn(`[${ip}] [${request.method}] ${request.url} → ${status}`, verbose ? JSON.stringify(errorLog, null, 2) : message);
       }
     }
 
