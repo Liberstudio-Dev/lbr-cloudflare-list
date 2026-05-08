@@ -7,6 +7,7 @@ export interface CloudflareAttacksOptions {
   logPath: string;
   excludedPaths?: (string | RegExp)[];
   silentPaths?: (string | RegExp)[];
+  verbose?: boolean;
 }
 
 export interface CloudflareAttacksAsyncOptions {
