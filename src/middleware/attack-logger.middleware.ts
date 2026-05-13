@@ -53,20 +53,28 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
     const ip = getClientIp(req);
     if (!ip || this.isThrottled(ip)) return;
 
-    const entry = {
-      timestamp: new Date().toISOString(),
-      type: "ATTACK",
-      ip,
-      method: req.method,
-      url: this.sanitize(req.url),
-    };
+    const silent = this.isSilent(req.url);
 
-    const line = JSON.stringify(entry) + "\n";
+    if (!silent) {
+      const entry = {
+        timestamp: new Date().toISOString(),
+        type: "ATTACK",
+        ip,
+        method: req.method,
+        url: this.sanitize(req.url),
+        ...(this.options.verbose && {
+          query: req.query,
+          body: req.body as Record<string, unknown>,
+        }),
+      };
 
-    if (!this.stream.write(line)) {
-      this.stream.once("drain", () => {
-        this.logger.debug("Stream del log degli attacchi svuotato");
-      });
+      const line = JSON.stringify(entry) + "\n";
+
+      if (!this.stream.write(line)) {
+        this.stream.once("drain", () => {
+          this.logger.debug("Stream del log degli attacchi svuotato");
+        });
+      }
     }
 
     const cidr = normalizeIp(ip);
@@ -75,7 +83,7 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       return;
     }
 
-    this.attSrv.updateIpList(cidr).catch((err: unknown) => {
+    this.attSrv.blockIp(ip).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : "Errore sconosciuto";
       this.logger.error(`Aggiornamento Cloudflare fallito: ${msg}`);
     });
@@ -107,6 +115,12 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
   private isExcluded(url: string): boolean {
     const excluded = this.options.excludedPaths ?? [];
     return excluded.some((p) => (p instanceof RegExp ? p.test(url) : url.startsWith(p)));
+  }
+
+  private isSilent(url: string): boolean {
+    return (this.options.silentPaths ?? []).some((p) =>
+      p instanceof RegExp ? p.test(url) : url.startsWith(p),
+    );
   }
 
   onModuleDestroy(): void {
