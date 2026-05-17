@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
-import { CLOUDFLARE_OPTIONS, normalizeIp } from "./utils";
+import { CLOUDFLARE_OPTIONS, isCloudflareIp, normalizeIp } from "./utils";
 
 import type { AsnLookupResponse, CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
@@ -21,7 +21,12 @@ export class AttacksService {
     private readonly options: CloudflareAttacksOptions,
   ) {}
 
-  async blockIp(rawIp: string): Promise<CloudflareResponse> {
+  async blockIp(rawIp: string): Promise<CloudflareResponse | null> {
+    if (await isCloudflareIp(rawIp)) {
+      this.logger.log(`IP ${rawIp} appartiene al range Cloudflare — ban saltato`);
+      return null;
+    }
+
     const asnRange = await this.lookupAsnRange(rawIp);
 
     if (asnRange) {
