@@ -11,14 +11,18 @@ Request → 404 rilevato dal middleware
   └─ IP estratto (cf-connecting-ip / x-real-ip / x-forwarded-for)
        └─ throttle 5s per IP
             └─ log su file (se path non è silentPath)
-                 └─ ASN lookup su api.hackertarget.com
-                      ├─ range trovato → blocca intera subnet su Cloudflare
-                      └─ fallback      → blocca singolo IP /32 o /128
+                 └─ allowedIps? → skip (log only)
+                      └─ IP Cloudflare? → skip (log only)
+                           └─ ASN lookup su api.hackertarget.com
+                                ├─ range trovato → blocca intera subnet su Cloudflare
+                                └─ fallback      → blocca singolo IP /32 o /128
 ```
 
 ### Filtraggio automatico
 
 Il modulo ignora automaticamente:
+- IP nella whitelist `allowedIps` (configurazione statica)
+- IP appartenenti ai range ufficiali Cloudflare (scaricati e cachati 24h)
 - IP privati (10.x, 192.168.x, 172.16–31.x)
 - Loopback (127.0.0.1, ::1)
 - IPv4-mapped IPv6 (::ffff:x.x.x.x → convertiti in IPv4)
@@ -68,6 +72,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       apiToken:  "your-cloudflare-api-token",
       comment:   "Blocked by liberstudio/cloudflare-list",
       logPath:   "/var/log/nestjs-attacks.log",
+      allowedIps:    ["1.2.3.4", "10.0.0.0/8"],
       excludedPaths: ["/api/health", "/api/webhook"],
       silentPaths:   ["/auth/me", "/auth/refresh"],
       verbose: false,
@@ -93,6 +98,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         listId:    config.getOrThrow<string>("CLOUDFLARE_LIST_ID"),
         comment:   config.get<string>("CLOUDFLARE_LIST_COMMENT") || "Blocked",
         logPath:   config.get<string>("CLOUDFLARE_LIST_LOG_PATH") || "/var/log/nestjs-attacks.log",
+        allowedIps:    ["1.2.3.4", "10.0.0.0/8"],
         excludedPaths: ["/api/health", "/api/webhook", /^\/api\/public\/.*/],
         silentPaths:   ["/auth/me", "/auth/refresh"],
         verbose: false,
@@ -114,9 +120,25 @@ export class AppModule {}
 | `listId` | `string` | si | ID della IP List Cloudflare |
 | `comment` | `string` | si | Commento aggiunto ad ogni IP bloccato |
 | `logPath` | `string` | si | Percorso del file di log degli attacchi |
+| `allowedIps` | `string[]` | no | IP o CIDR mai bloccati (whitelist, supporta IPv4 e IPv6) |
 | `excludedPaths` | `(string \| RegExp)[]` | no | Path esclusi da ogni rilevamento e log |
 | `silentPaths` | `(string \| RegExp)[]` | no | Path bloccati su Cloudflare ma senza log su file |
 | `verbose` | `boolean` | no | Se `true`, il log include body, query, params e stack |
+
+### `allowedIps` — whitelist server
+
+Lista di IP o subnet CIDR che non vengono mai bloccati, indipendentemente dal comportamento. Utile per i propri server, proxy interni, CDN proprietarie. Supporta IPv4, CIDR IPv4, IPv6 e CIDR IPv6:
+
+```typescript
+allowedIps: [
+  "1.2.3.4",           // IP singolo IPv4
+  "10.0.0.0/8",        // subnet IPv4
+  "2001:db8::1",       // IP singolo IPv6
+  "2001:db8::/32",     // subnet IPv6
+]
+```
+
+> I range ufficiali Cloudflare sono esclusi automaticamente senza bisogno di aggiungerli qui.
 
 ### `excludedPaths` vs `silentPaths`
 

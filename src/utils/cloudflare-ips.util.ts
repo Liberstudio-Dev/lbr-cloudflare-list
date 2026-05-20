@@ -69,6 +69,30 @@ function isInCidrV6(ip: string, cidr: string): boolean {
   return (ipv6ToBigInt(ip) & mask) === (ipv6ToBigInt(range) & mask);
 }
 
+export function isAllowedIp(ip: string, allowedIps: string[]): boolean {
+  if (!ip || !allowedIps.length) return false;
+
+  let pure = ip.includes("/") ? ip.split("/")[0] : ip;
+  pure = pure.trim();
+  if (pure.startsWith("::ffff:")) pure = pure.slice("::ffff:".length);
+
+  const version = isIP(pure);
+  if (!version) return false;
+
+  return allowedIps.some((entry) => {
+    let entryPure = entry.includes("/") ? entry.split("/")[0] : entry;
+    entryPure = entryPure.trim();
+    if (entryPure.startsWith("::ffff:")) entryPure = entryPure.slice("::ffff:".length);
+
+    const entryVersion = isIP(entryPure);
+    if (!entryVersion || entryVersion !== version) return false;
+
+    return version === 4
+      ? isInCidrV4(pure, entry)
+      : isInCidrV6(pure, entry);
+  });
+}
+
 export async function isCloudflareIp(ip: string): Promise<boolean> {
   if (!ip) return false;
 

@@ -5,6 +5,7 @@ export interface CloudflareAttacksOptions {
   listId: string;
   comment: string;
   logPath: string;
+  allowedIps?: string[];
   excludedPaths?: (string | RegExp)[];
   silentPaths?: (string | RegExp)[];
   verbose?: boolean;
