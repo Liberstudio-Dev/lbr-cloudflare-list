@@ -143,6 +143,7 @@ whatsappNotify: {
 Il messaggio inviato sarà:
 ```
 🚨 IP bannato su Cloudflare
+Provenienza: Blocked by liberstudio/cloudflare-list
 IP: 1.2.3.4
 Subnet bloccata: 1.2.0.0/16
 ```

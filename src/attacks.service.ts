@@ -63,7 +63,7 @@ export class AttacksService {
     }
 
     const auth = Buffer.from(`${user}:${password}`).toString("base64");
-    const message = `🚨 IP bannato su Cloudflare\nIP: ${rawIp}\nSubnet bloccata: ${cidr}`;
+    const message = `🚨 IP bannato su Cloudflare\nProvenienza: ${this.options.comment}\nIP: ${rawIp}\nSubnet bloccata: ${cidr}`;
 
     firstValueFrom(
       this.httpService.post(
