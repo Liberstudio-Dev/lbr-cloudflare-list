@@ -132,7 +132,7 @@ export class AppModule {}
 
 ### `whatsappNotify` — notifiche ban su WhatsApp
 
-Quando configurato, invia un messaggio WhatsApp ad un numero specifico ogni volta che un IP viene bloccato su Cloudflare. Richiede le variabili d'ambiente `WA_URL`, `WA_USER`, `WA_PASSWORD` e `WA_DEVICE_ID` già presenti nel progetto (lette automaticamente da `process.env`).
+Quando configurato, invia un messaggio WhatsApp ad un numero specifico ogni volta che un IP viene bloccato su Cloudflare. Richiede le variabili d'ambiente `WA_URL`, `WA_USER`, `WA_PASSWORD` e `CLOUDFLARE_WA_DEVICE_ID` già presenti nel progetto (lette automaticamente da `process.env`).
 
 ```typescript
 whatsappNotify: {
@@ -152,7 +152,7 @@ Variabili d'ambiente richieste (lette automaticamente da `process.env`):
 WA_URL=https://messaggistica.liberdesign.eu
 WA_USER=your-user
 WA_PASSWORD=your-password
-WA_DEVICE_ID=your-device-id
+CLOUDFLARE_WA_DEVICE_ID=your-device-id
 WA_NOTIFY_PHONE=393331234567
 ```
 

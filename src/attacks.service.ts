@@ -55,10 +55,10 @@ export class AttacksService {
     const url = process.env["WA_URL"];
     const user = process.env["WA_USER"];
     const password = process.env["WA_PASSWORD"];
-    const deviceId = process.env["WA_DEVICE_ID"];
+    const deviceId = process.env["CLOUDFLARE_WA_DEVICE_ID"];
 
     if (!url || !user || !password || !deviceId) {
-      this.logger.warn("Notifica WhatsApp saltata: WA_URL, WA_USER, WA_PASSWORD o WA_DEVICE_ID mancanti");
+      this.logger.warn("Notifica WhatsApp saltata: WA_URL, WA_USER, WA_PASSWORD o CLOUDFLARE_WA_DEVICE_ID mancanti");
       return;
     }
 
