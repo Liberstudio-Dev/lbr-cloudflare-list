@@ -1,6 +1,6 @@
 {
   "name": "@liberstudio/cloudflare-list",
-  "version": "2.3.7",
+  "version": "2.3.8",
   "description": "Modulo NestJS per gestione IP List Cloudflare",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
     "build": "npx tsc",
     "prepublishOnly": "npm run build",
     "version:bump": "npx tsx src/scripts/version-bump.ts",
-    "pub": "npm publish --access public"
+    "pub": "npm run build && npm publish --access public"
   },
   "publishConfig": {
     "access": "public"
