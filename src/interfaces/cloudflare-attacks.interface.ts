@@ -1,4 +1,8 @@
 // cloudflare-attacks.interfaces.ts
+export interface WhatsappNotifyOptions {
+  phone: string;
+}
+
 export interface CloudflareAttacksOptions {
   apiToken: string;
   accountId: string;
@@ -9,6 +13,7 @@ export interface CloudflareAttacksOptions {
   excludedPaths?: (string | RegExp)[];
   silentPaths?: (string | RegExp)[];
   verbose?: boolean;
+  whatsappNotify?: WhatsappNotifyOptions;
 }
 
 export interface CloudflareAttacksAsyncOptions {

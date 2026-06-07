@@ -76,6 +76,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       excludedPaths: ["/api/health", "/api/webhook"],
       silentPaths:   ["/auth/me", "/auth/refresh"],
       verbose: false,
+      whatsappNotify: { phone: "393331234567" },
     }),
   ],
 })
@@ -102,6 +103,9 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         excludedPaths: ["/api/health", "/api/webhook", /^\/api\/public\/.*/],
         silentPaths:   ["/auth/me", "/auth/refresh"],
         verbose: false,
+        whatsappNotify: {
+          phone: config.getOrThrow<string>("WA_NOTIFY_PHONE"),
+        },
       }),
     }),
   ],
@@ -124,6 +128,33 @@ export class AppModule {}
 | `excludedPaths` | `(string \| RegExp)[]` | no | Path esclusi da ogni rilevamento e log |
 | `silentPaths` | `(string \| RegExp)[]` | no | Path bloccati su Cloudflare ma senza log su file |
 | `verbose` | `boolean` | no | Se `true`, il log include body, query, params e stack |
+| `whatsappNotify` | `{ phone: string }` | no | Invia una notifica WhatsApp quando un IP viene bannato |
+
+### `whatsappNotify` — notifiche ban su WhatsApp
+
+Quando configurato, invia un messaggio WhatsApp ad un numero specifico ogni volta che un IP viene bloccato su Cloudflare. Richiede le variabili d'ambiente `WA_URL`, `WA_USER`, `WA_PASSWORD` e `WA_DEVICE_ID` già presenti nel progetto (lette automaticamente da `process.env`).
+
+```typescript
+whatsappNotify: {
+  phone: "393331234567", // numero con prefisso internazionale, senza +
+}
+```
+
+Il messaggio inviato sarà:
+```
+🚨 IP bannato su Cloudflare
+IP: 1.2.3.4
+Subnet bloccata: 1.2.0.0/16
+```
+
+Variabili d'ambiente richieste (lette automaticamente da `process.env`):
+```env
+WA_URL=https://messaggistica.liberdesign.eu
+WA_USER=your-user
+WA_PASSWORD=your-password
+WA_DEVICE_ID=your-device-id
+WA_NOTIFY_PHONE=393331234567
+```
 
 ### `allowedIps` — whitelist server
 

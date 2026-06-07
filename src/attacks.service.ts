@@ -35,13 +35,46 @@ export class AttacksService {
     const asnRange = await this.lookupAsnRange(rawIp);
 
     if (asnRange) {
-      this.logger.log(`ASN range trovato per ${rawIp}: ${asnRange} — blocco intera subnet`);
-      return this.updateIpList(asnRange);
+      this.logger.error(`ASN range trovato per ${rawIp}: ${asnRange} — blocco intera subnet`);
+      const result = await this.updateIpList(asnRange);
+      this.sendWhatsappNotification(rawIp, asnRange);
+      return result;
     }
 
     const cidr = normalizeIp(rawIp);
     if (!cidr) throw new Error(`IP non valido: ${rawIp}`);
-    return this.updateIpList(cidr);
+    const result = await this.updateIpList(cidr);
+    this.sendWhatsappNotification(rawIp, cidr);
+    return result;
+  }
+
+  private sendWhatsappNotification(rawIp: string, cidr: string): void {
+    const wa = this.options.whatsappNotify;
+    if (!wa) return;
+
+    const url = process.env["WA_URL"];
+    const user = process.env["WA_USER"];
+    const password = process.env["WA_PASSWORD"];
+    const deviceId = process.env["WA_DEVICE_ID"];
+
+    if (!url || !user || !password || !deviceId) {
+      this.logger.warn("Notifica WhatsApp saltata: WA_URL, WA_USER, WA_PASSWORD o WA_DEVICE_ID mancanti");
+      return;
+    }
+
+    const auth = Buffer.from(`${user}:${password}`).toString("base64");
+    const message = `🚨 IP bannato su Cloudflare\nIP: ${rawIp}\nSubnet bloccata: ${cidr}`;
+
+    firstValueFrom(
+      this.httpService.post(
+        `${url}/send/message`,
+        { phone: wa.phone, message },
+        { headers: { Authorization: `Basic ${auth}`, "X-Device-Id": deviceId } },
+      ),
+    ).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Errore sconosciuto";
+      this.logger.warn(`Notifica WhatsApp fallita: ${msg}`);
+    });
   }
 
   private async lookupAsnRange(ip: string): Promise<string | null> {
@@ -59,7 +92,7 @@ export class AttacksService {
     const { accountId, listId, apiToken, comment } = this.options;
     const url = `${this.API_URL}/${accountId}/rules/lists/${listId}/items`;
 
-    this.logger.log(`Aggiungo ${cidr} alla lista Cloudflare`);
+    this.logger.error(`Aggiungo ${cidr} alla lista Cloudflare`);
 
     const body = [{ ip: cidr, comment }];
 
