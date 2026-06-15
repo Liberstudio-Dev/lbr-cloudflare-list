@@ -1,6 +1,6 @@
 {
   "name": "@liberstudio/cloudflare-list",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Modulo NestJS per gestione IP List Cloudflare",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,14 +32,17 @@
     "rxjs": ">=7.0.0"
   },
   "devDependencies": {
-    "@nestjs/axios": "^4.0.0",
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.1.14",
+    "@nestjs/axios": "^4.0.1",
+    "@nestjs/common": "^11.1.26",
+    "@nestjs/core": "^11.1.26",
     "@types/express": "^5.0.6",
-    "@types/node": "^20.9.0",
-    "axios": "^1.0.0",
-    "rxjs": "^7.8.0",
+    "@types/node": "^20.19.43",
+    "axios": "^1.18.0",
+    "rxjs": "^7.8.2",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.0.0"
+  },
+  "allowScripts": {
+    "simple-git-hooks@2.13.1": true
   }
 }

@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
-import { CLOUDFLARE_OPTIONS, isAllowedIp, isCloudflareIp, normalizeIp } from "./utils";
+import { CLOUDFLARE_OPTIONS, isAllowedIp, isCloudflareIp, isGoogleBotIp, normalizeIp } from "./utils";
 
 import type { AsnLookupResponse, CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
@@ -29,6 +29,11 @@ export class AttacksService {
 
     if (await isCloudflareIp(rawIp)) {
       this.logger.log(`IP ${rawIp} appartiene al range Cloudflare — ban saltato`);
+      return null;
+    }
+
+    if (await isGoogleBotIp(rawIp)) {
+      this.logger.log(`IP ${rawIp} è un crawler Google — ban saltato`);
       return null;
     }
 
