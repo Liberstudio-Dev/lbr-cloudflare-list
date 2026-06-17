@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
-import { CLOUDFLARE_OPTIONS, isAllowedIp, isCloudflareIp, isGoogleBotIp, normalizeIp } from "./utils";
+import { CLOUDFLARE_OPTIONS, isAllowedIp, isCloudflareIp, isGoogleBotIp, googleBotOverlapsCidr, normalizeIp } from "./utils";
 
 import type { AsnLookupResponse, CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
@@ -39,11 +39,15 @@ export class AttacksService {
 
     const asnRange = await this.lookupAsnRange(rawIp);
 
-    if (asnRange) {
+    if (asnRange && !(await googleBotOverlapsCidr(asnRange))) {
       this.logger.error(`ASN range trovato per ${rawIp}: ${asnRange} — blocco intera subnet`);
       const result = await this.updateIpList(asnRange);
       this.sendWhatsappNotification(rawIp, asnRange);
       return result;
+    }
+
+    if (asnRange) {
+      this.logger.warn(`ASN range ${asnRange} sovrapposto a range Googlebot — ban limitato all'IP singolo`);
     }
 
     const cidr = normalizeIp(rawIp);
