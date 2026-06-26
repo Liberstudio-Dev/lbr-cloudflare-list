@@ -11,7 +11,10 @@ const GOOGLE_IP_LIST_URLS = [
 ];
 
 // Domini dei crawler verificati da Google (per il fallback reverse DNS).
-const GOOGLE_HOSTS = [".googlebot.com", ".google.com", ".googleusercontent.com"];
+// NB: .googleusercontent.com è escluso di proposito — è il PTR generico di ogni
+// VM su Google Cloud, quindi qualsiasi scanner ospitato su GCP forward-confirma
+// e verrebbe messo erroneamente in whitelist. I crawler veri usano solo i due sotto.
+const GOOGLE_HOSTS = [".googlebot.com", ".google.com"];
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 
