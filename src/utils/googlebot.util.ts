@@ -3,11 +3,14 @@ import { promises as dns } from "dns";
 
 import { ipVersion, isInCidrV4, isInCidrV6, isIpInAnyCidr, purifyIp } from "./cidr.util";
 
-// Solo il crawler di Google Search. special-crawlers e user-triggered-fetchers
-// includono range GCP molto ampi (Lighthouse, PageSpeed, Feed Fetcher) e causano
-// falsi positivi — non meritano protezione "skip ban".
+// common-crawlers.json = Googlebot Search + altri crawler comuni, con range IP
+// stretti. NB: il vecchio URL .../search/apis/ipranges/googlebot.json è stato
+// dismesso da Google (risponde "Temporarily Broken") — questo è il rimpiazzo
+// ufficiale indicato da Google. special-crawlers e user-triggered-fetchers li
+// escludiamo di proposito: includono range GCP molto ampi (Lighthouse, PageSpeed,
+// Feed Fetcher) e causano falsi positivi — non meritano protezione "skip ban".
 const GOOGLE_IP_LIST_URLS = [
-  "https://developers.google.com/static/search/apis/ipranges/googlebot.json",
+  "https://developers.google.com/static/crawling/ipranges/common-crawlers.json",
 ];
 
 // Domini dei crawler verificati da Google (per il fallback reverse DNS).
