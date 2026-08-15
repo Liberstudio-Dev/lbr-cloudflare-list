@@ -1,6 +1,6 @@
 {
   "name": "@liberstudio/cloudflare-list",
-  "version": "2.4.5",
+  "version": "2.4.6",
   "description": "Modulo NestJS per gestione IP List Cloudflare",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,7 +22,7 @@
     "access": "public"
   },
   "simple-git-hooks": {
-    "pre-commit": "source ~/.bashrc && npm run version:bump && git add package.json package-lock.json"
+    "pre-commit": "[ -f \"$HOME/.bashrc\" ] && \\. \"$HOME/.bashrc\"; export NVM_DIR=\"$HOME/.nvm\"; [ -s \"$NVM_DIR/nvm.sh\" ] && \\. \"$NVM_DIR/nvm.sh\"; npm run version:bump && git add package.json package-lock.json"
   },
   "peerDependencies": {
     "@nestjs/axios": ">=3.0.0",
