@@ -55,11 +55,20 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
 
     const silent = this.isSilent(req.url);
 
+    // Provenienza reale della richiesta: serve a capire se è passata dalla zona Cloudflare
+    // (cf-ray assente → accesso diretto all'origin; host inatteso → altro hostname/zona)
+    const origin = {
+      remoteAddress: req.socket.remoteAddress ?? "unknown",
+      host: this.sanitize(req.headers.host ?? "-"),
+      cfRay: this.sanitize(String(req.headers["cf-ray"] ?? "-")),
+    };
+
     if (!silent) {
       const entry = {
         timestamp: new Date().toISOString(),
         type: "ATTACK",
         ip,
+        ...origin,
         method: req.method,
         url: this.sanitize(req.url),
         ...(this.options.verbose && {
@@ -82,6 +91,10 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       this.logger.warn(`IP non valido: ${ip}`);
       return;
     }
+
+    this.logger.warn(
+      `Provenienza ${ip}: socket=${origin.remoteAddress} host=${origin.host} cf-ray=${origin.cfRay}`,
+    );
 
     this.attSrv.blockIp(ip).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : "Errore sconosciuto";
