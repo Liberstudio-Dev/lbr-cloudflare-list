@@ -11,4 +11,9 @@ export function validateOptions(opzioni: CloudflareAttacksOptions): void {
       throw new Error(`CloudflareAttacksOptions.${campo} deve essere una stringa non vuota`);
     }
   }
+
+  const provider = opzioni.notifyProvider;
+  if (provider !== undefined && provider !== "whatsapp" && provider !== "telegram") {
+    throw new Error(`CloudflareAttacksOptions.notifyProvider deve essere "whatsapp" o "telegram"`);
+  }
 }

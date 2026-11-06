@@ -76,7 +76,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       excludedPaths: ["/api/health", "/api/webhook"],
       silentPaths:   ["/auth/me", "/auth/refresh"],
       verbose: false,
-      whatsappNotify: { phone: "393331234567" },
+      telegramNotify: { chatId: "123456789" },
     }),
   ],
 })
@@ -103,8 +103,8 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         excludedPaths: ["/api/health", "/api/webhook", /^\/api\/public\/.*/],
         silentPaths:   ["/auth/me", "/auth/refresh"],
         verbose: false,
-        whatsappNotify: {
-          phone: config.getOrThrow<string>("WA_NOTIFY_PHONE"),
+        telegramNotify: {
+          chatId: config.getOrThrow<string>("TELEGRAM_NOTIFY_CHAT_ID"),
         },
       }),
     }),
@@ -129,6 +129,34 @@ export class AppModule {}
 | `silentPaths` | `(string \| RegExp)[]` | no | Path bloccati su Cloudflare ma senza log su file |
 | `verbose` | `boolean` | no | Se `true`, il log include body, query, params e stack |
 | `whatsappNotify` | `{ phone: string }` | no | Invia una notifica WhatsApp quando un IP viene bannato |
+| `telegramNotify` | `{ chatId: string }` | no | Invia una notifica Telegram quando un IP viene bannato |
+| `notifyProvider` | `"whatsapp" \| "telegram"` | no | Canale di notifica da usare (default: vedi sotto) |
+
+### `notifyProvider` — scelta del canale di notifica
+
+Ad ogni ban viene inviata **una sola** notifica, sul canale scelto:
+
+- se `notifyProvider` è impostato, si usa quel canale;
+- altrimenti si usa **WhatsApp** solo se è configurato del tutto (`whatsappNotify` + le 4 variabili `WA_*`), in ogni altro caso **Telegram**.
+
+Se il canale scelto non è configurato (es. `telegramNotify` assente) la notifica viene saltata.
+
+### `telegramNotify` — notifiche ban su Telegram
+
+Invia il messaggio di ban tramite un bot Telegram. Il token del bot è letto da `process.env.TELEGRAM_BOT_TOKEN`.
+
+```typescript
+telegramNotify: {
+  chatId: "123456789", // id della chat, del gruppo (es. "-100...") o "@nomecanale"
+}
+```
+
+Per ricavare il `chatId`: scrivi un messaggio al bot (o aggiungilo al gruppo), poi apri `https://api.telegram.org/bot<TOKEN>/getUpdates` e leggi `message.chat.id`.
+
+```env
+TELEGRAM_BOT_TOKEN=123456:ABC-your-bot-token
+TELEGRAM_NOTIFY_CHAT_ID=123456789
+```
 
 ### `whatsappNotify` — notifiche ban su WhatsApp
 

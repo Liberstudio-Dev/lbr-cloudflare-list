@@ -3,6 +3,12 @@ export interface WhatsappNotifyOptions {
   phone: string;
 }
 
+export interface TelegramNotifyOptions {
+  chatId: string;
+}
+
+export type NotifyProvider = "whatsapp" | "telegram";
+
 export interface CloudflareAttacksOptions {
   apiToken: string;
   accountId: string;
@@ -14,6 +20,8 @@ export interface CloudflareAttacksOptions {
   silentPaths?: (string | RegExp)[];
   verbose?: boolean;
   whatsappNotify?: WhatsappNotifyOptions;
+  telegramNotify?: TelegramNotifyOptions;
+  notifyProvider?: NotifyProvider;
 }
 
 export interface CloudflareAttacksAsyncOptions {

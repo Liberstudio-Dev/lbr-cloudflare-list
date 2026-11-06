@@ -42,7 +42,7 @@ export class AttacksService {
     if (asnRange && !(await googleBotOverlapsCidr(asnRange))) {
       this.logger.error(`ASN range trovato per ${rawIp}: ${asnRange} — blocco intera subnet`);
       const result = await this.updateIpList(asnRange);
-      this.sendWhatsappNotification(rawIp, asnRange);
+      this.sendNotification(rawIp, asnRange);
       return result;
     }
 
@@ -53,11 +53,42 @@ export class AttacksService {
     const cidr = normalizeIp(rawIp);
     if (!cidr) throw new Error(`IP non valido: ${rawIp}`);
     const result = await this.updateIpList(cidr);
-    this.sendWhatsappNotification(rawIp, cidr);
+    this.sendNotification(rawIp, cidr);
     return result;
   }
 
-  private sendWhatsappNotification(rawIp: string, cidr: string): void {
+  private sendNotification(rawIp: string, cidr: string): void {
+    const message = `🚨 IP bannato su Cloudflare\nProvenienza: ${this.options.comment}\nIP: ${rawIp}\nSubnet bloccata: ${cidr}`;
+    const provider = this.options.notifyProvider ?? (this.isWhatsappConfigured() ? "whatsapp" : "telegram");
+
+    if (provider === "whatsapp") this.sendWhatsappNotification(message);
+    else this.sendTelegramNotification(message);
+  }
+
+  private isWhatsappConfigured(): boolean {
+    const env = process.env;
+    return !!(this.options.whatsappNotify && env["WA_URL"] && env["WA_USER"] && env["WA_PASSWORD"] && env["CLOUDFLARE_WA_DEVICE_ID"]);
+  }
+
+  private sendTelegramNotification(message: string): void {
+    const tg = this.options.telegramNotify;
+    if (!tg) return;
+
+    const token = process.env["TELEGRAM_BOT_TOKEN"];
+    if (!token) {
+      this.logger.warn("Notifica Telegram saltata: TELEGRAM_BOT_TOKEN mancante");
+      return;
+    }
+
+    firstValueFrom(
+      this.httpService.post(`https://api.telegram.org/bot${token}/sendMessage`, { chat_id: tg.chatId, text: message }),
+    ).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Errore sconosciuto";
+      this.logger.warn(`Notifica Telegram fallita: ${msg}`);
+    });
+  }
+
+  private sendWhatsappNotification(message: string): void {
     const wa = this.options.whatsappNotify;
     if (!wa) return;
 
@@ -72,7 +103,6 @@ export class AttacksService {
     }
 
     const auth = Buffer.from(`${user}:${password}`).toString("base64");
-    const message = `🚨 IP bannato su Cloudflare\nProvenienza: ${this.options.comment}\nIP: ${rawIp}\nSubnet bloccata: ${cidr}`;
 
     firstValueFrom(
       this.httpService.post(
