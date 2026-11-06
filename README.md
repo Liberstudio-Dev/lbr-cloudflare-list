@@ -106,6 +106,7 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
         telegramNotify: {
           chatId: config.getOrThrow<string>("TELEGRAM_NOTIFY_CHAT_ID"),
         },
+        notifyProvider: config.get<"whatsapp" | "telegram">("NOTIFY_PROVIDER"), // assente → scelta automatica
       }),
     }),
   ],
@@ -156,6 +157,7 @@ Per ricavare il `chatId`: scrivi un messaggio al bot (o aggiungilo al gruppo), p
 ```env
 TELEGRAM_BOT_TOKEN=123456:ABC-your-bot-token
 TELEGRAM_NOTIFY_CHAT_ID=123456789
+NOTIFY_PROVIDER=telegram   # opzionale: whatsapp | telegram
 ```
 
 ### `whatsappNotify` — notifiche ban su WhatsApp

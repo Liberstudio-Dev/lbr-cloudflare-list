@@ -84,7 +84,8 @@ export class AttacksService {
       this.httpService.post(`https://api.telegram.org/bot${token}/sendMessage`, { chat_id: tg.chatId, text: message }),
     ).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : "Errore sconosciuto";
-      this.logger.warn(`Notifica Telegram fallita: ${msg}`);
+      const description = axios.isAxiosError(err) ? (err.response?.data as { description?: string } | undefined)?.description : undefined;
+      this.logger.warn(`Notifica Telegram fallita: ${msg}${description ? ` (${description})` : ""}`);
     });
   }
 
