@@ -7,7 +7,7 @@ import { firstValueFrom } from "rxjs";
 
 import { CLOUDFLARE_OPTIONS, isAllowedIp, isCloudflareIp, isGoogleBotIp, googleBotOverlapsCidr, normalizeIp } from "./utils";
 
-import type { AsnLookupResponse, CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
+import type { AsnLookupResponse, CloudflareAccount, CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
 @Injectable()
 export class AttacksService {
@@ -21,7 +21,7 @@ export class AttacksService {
     private readonly options: CloudflareAttacksOptions,
   ) {}
 
-  async blockIp(rawIp: string): Promise<CloudflareResponse | null> {
+  async blockIp(rawIp: string): Promise<CloudflareResponse[] | null> {
     if (isAllowedIp(rawIp, this.options.allowedIps ?? [])) {
       this.logger.log(`IP ${rawIp} in whitelist — ban saltato`);
       return null;
@@ -42,7 +42,7 @@ export class AttacksService {
     if (asnRange && !(await googleBotOverlapsCidr(asnRange))) {
       this.logger.error(`ASN range trovato per ${rawIp}: ${asnRange} — blocco intera subnet`);
       const result = await this.updateIpList(asnRange);
-      this.sendNotification(rawIp, asnRange);
+      this.sendNotification(rawIp, asnRange, result.length);
       return result;
     }
 
@@ -53,12 +53,12 @@ export class AttacksService {
     const cidr = normalizeIp(rawIp);
     if (!cidr) throw new Error(`IP non valido: ${rawIp}`);
     const result = await this.updateIpList(cidr);
-    this.sendNotification(rawIp, cidr);
+    this.sendNotification(rawIp, cidr, result.length);
     return result;
   }
 
-  private sendNotification(rawIp: string, cidr: string): void {
-    const message = `🚨 IP bannato su Cloudflare\nProvenienza: ${this.options.comment}\nIP: ${rawIp}\nSubnet bloccata: ${cidr}`;
+  private sendNotification(rawIp: string, cidr: string, okAccounts: number): void {
+    const message = `🚨 IP bannato su Cloudflare\nProvenienza: ${this.options.comment}\nIP: ${rawIp}\nSubnet bloccata: ${cidr}\nAccount: ${okAccounts}/${this.options.accounts.length}`;
     const provider = this.options.notifyProvider ?? (this.isWhatsappConfigured() ? "whatsapp" : "telegram");
 
     if (provider === "whatsapp") this.sendWhatsappNotification(message);
@@ -128,13 +128,36 @@ export class AttacksService {
     }
   }
 
-  async updateIpList(cidr: string): Promise<CloudflareResponse> {
-    const { accountId, listId, apiToken, comment } = this.options;
+  /** Aggiunge il CIDR alle liste di tutti gli account; ritorna le risposte degli account riusciti. */
+  async updateIpList(cidr: string): Promise<CloudflareResponse[]> {
+    const { accounts } = this.options;
+
+    this.logger.error(`Aggiungo ${cidr} alle liste Cloudflare (${accounts.length} account)`);
+
+    const results = await Promise.allSettled(accounts.map((account) => this.addToAccountList(account, cidr)));
+
+    const ok: CloudflareResponse[] = [];
+    let firstError: unknown;
+
+    results.forEach((r, i) => {
+      if (r.status === "fulfilled") {
+        ok.push(r.value);
+        return;
+      }
+      firstError ??= r.reason;
+      const msg = r.reason instanceof Error ? r.reason.message : "Errore sconosciuto";
+      this.logger.error(`Aggiunta di ${cidr} fallita sull'account ${accounts[i].accountId}: ${msg}`);
+    });
+
+    if (ok.length === 0) throw firstError;
+    return ok;
+  }
+
+  private async addToAccountList(account: CloudflareAccount, cidr: string): Promise<CloudflareResponse> {
+    const { accountId, listId, apiToken } = account;
     const url = `${this.API_URL}/${accountId}/rules/lists/${listId}/items`;
 
-    this.logger.error(`Aggiungo ${cidr} alla lista Cloudflare`);
-
-    const body = [{ ip: cidr, comment }];
+    const body = [{ ip: cidr, comment: this.options.comment }];
 
     try {
       const response = await firstValueFrom(

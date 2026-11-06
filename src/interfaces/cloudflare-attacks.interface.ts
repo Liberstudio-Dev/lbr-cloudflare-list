@@ -9,10 +9,14 @@ export interface TelegramNotifyOptions {
 
 export type NotifyProvider = "whatsapp" | "telegram";
 
-export interface CloudflareAttacksOptions {
+export interface CloudflareAccount {
   apiToken: string;
   accountId: string;
   listId: string;
+}
+
+export interface CloudflareAttacksOptions {
+  accounts: CloudflareAccount[];
   comment: string;
   logPath: string;
   allowedIps?: string[];

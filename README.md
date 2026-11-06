@@ -47,6 +47,8 @@ Il modulo ignora automaticamente:
    - Action: `Block`
 6. Salvare la regola
 
+Con più account Cloudflare ripetere i passi per ogni account: ognuno ha la sua lista, il suo token e la sua regola WAF.
+
 ---
 
 ## Installazione
@@ -67,9 +69,10 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
 @Module({
   imports: [
     CloudflareAttacksModule.forRoot({
-      accountId: "abc123",
-      listId:    "def456",
-      apiToken:  "your-cloudflare-api-token",
+      accounts: [
+        { accountId: "abc123", listId: "def456", apiToken: "token-account-1" },
+        { accountId: "ghi789", listId: "jkl012", apiToken: "token-account-2" },
+      ],
       comment:   "Blocked by liberstudio/cloudflare-list",
       logPath:   "/var/log/nestjs-attacks.log",
       allowedIps:    ["1.2.3.4", "10.0.0.0/8"],
@@ -94,9 +97,18 @@ import { CloudflareAttacksModule } from "@liberstudio/cloudflare-list";
       imports: [ConfigModule],
       inject:  [ConfigService],
       useFactory: (config: ConfigService) => ({
-        apiToken:  config.getOrThrow<string>("CLOUDFLARE_API_TOKEN"),
-        accountId: config.getOrThrow<string>("CLOUDFLARE_ACCOUNT_ID"),
-        listId:    config.getOrThrow<string>("CLOUDFLARE_LIST_ID"),
+        accounts: [
+          {
+            apiToken:  config.getOrThrow<string>("CLOUDFLARE_API_TOKEN"),
+            accountId: config.getOrThrow<string>("CLOUDFLARE_ACCOUNT_ID"),
+            listId:    config.getOrThrow<string>("CLOUDFLARE_LIST_ID"),
+          },
+          {
+            apiToken:  config.getOrThrow<string>("CLOUDFLARE_2_API_TOKEN"),
+            accountId: config.getOrThrow<string>("CLOUDFLARE_2_ACCOUNT_ID"),
+            listId:    config.getOrThrow<string>("CLOUDFLARE_2_LIST_ID"),
+          },
+        ],
         comment:   config.get<string>("CLOUDFLARE_LIST_COMMENT") || "Blocked",
         logPath:   config.get<string>("CLOUDFLARE_LIST_LOG_PATH") || "/var/log/nestjs-attacks.log",
         allowedIps:    ["1.2.3.4", "10.0.0.0/8"],
@@ -120,9 +132,7 @@ export class AppModule {}
 
 | Opzione | Tipo | Obbligatorio | Descrizione |
 |---|---|---|---|
-| `apiToken` | `string` | si | Token API Cloudflare |
-| `accountId` | `string` | si | ID account Cloudflare |
-| `listId` | `string` | si | ID della IP List Cloudflare |
+| `accounts` | `CloudflareAccount[]` | si | Account Cloudflare su cui bannare (almeno uno), vedi sotto |
 | `comment` | `string` | si | Commento aggiunto ad ogni IP bloccato |
 | `logPath` | `string` | si | Percorso del file di log degli attacchi |
 | `allowedIps` | `string[]` | no | IP o CIDR mai bloccati (whitelist, supporta IPv4 e IPv6) |
@@ -132,6 +142,38 @@ export class AppModule {}
 | `whatsappNotify` | `{ phone: string }` | no | Invia una notifica WhatsApp quando un IP viene bannato |
 | `telegramNotify` | `{ chatId: string }` | no | Invia una notifica Telegram quando un IP viene bannato |
 | `notifyProvider` | `"whatsapp" \| "telegram"` | no | Canale di notifica da usare (default: vedi sotto) |
+
+### `accounts` — ban su più account Cloudflare
+
+Ogni elemento di `accounts` è un `CloudflareAccount`:
+
+| Campo | Tipo | Obbligatorio | Descrizione |
+|---|---|---|---|
+| `apiToken` | `string` | si | Token API Cloudflare con accesso all'account |
+| `accountId` | `string` | si | ID account Cloudflare |
+| `listId` | `string` | si | ID della IP List dell'account |
+
+Ad ogni ban l'IP (o la subnet) viene aggiunto **in parallelo** alle liste di tutti gli account:
+
+- se un account fallisce, l'errore viene loggato con il suo `accountId` e gli altri proseguono;
+- se falliscono **tutti**, `updateIpList()` lancia `HttpException` con il primo errore;
+- `updateIpList()` e `blockIp()` ritornano un `CloudflareResponse[]` con le risposte degli account riusciti.
+
+Se lo stesso token ha accesso a più account, basta ripeterlo in ogni elemento.
+
+### Migrazione dalla 2.x
+
+La 3.0.0 è un breaking change: `apiToken`, `accountId` e `listId` non stanno più alla radice delle opzioni, ma dentro `accounts`.
+
+```typescript
+// 2.x
+{ apiToken: "...", accountId: "...", listId: "...", comment: "...", logPath: "..." }
+
+// 3.x
+{ accounts: [{ apiToken: "...", accountId: "...", listId: "..." }], comment: "...", logPath: "..." }
+```
+
+Inoltre `updateIpList()` ritorna `CloudflareResponse[]` invece di `CloudflareResponse`, e `blockIp()` ritorna `CloudflareResponse[] | null`.
 
 ### `notifyProvider` — scelta del canale di notifica
 
@@ -176,7 +218,10 @@ Il messaggio inviato sarà:
 Provenienza: Blocked by liberstudio/cloudflare-list
 IP: 1.2.3.4
 Subnet bloccata: 1.2.0.0/16
+Account: 2/2
 ```
+
+`Account` indica su quanti account configurati il ban è andato a buon fine. La notifica è sempre **una** per ban.
 
 Variabili d'ambiente richieste (lette automaticamente da `process.env`):
 ```env

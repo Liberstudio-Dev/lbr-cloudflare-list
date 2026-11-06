@@ -30,4 +30,11 @@ pkg.version = `${major}.${minor}.${patch}`;
 // Scrittura package.json
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
+// Allineamento package-lock.json (versione radice e del pacchetto "")
+const lockPath = resolve(__dirname, '../../package-lock.json');
+const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+lock.version = pkg.version;
+lock.packages[''].version = pkg.version;
+writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+
 console.log(`Version updated to ${pkg.version}`);
