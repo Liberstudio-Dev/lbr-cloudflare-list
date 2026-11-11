@@ -41,7 +41,7 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
 
   use(req: Request, res: Response, next: NextFunction): void {
     res.on("finish", () => {
-      if (res.statusCode === 404 && !this.isExcluded(req.url)) {
+      if (res.statusCode === 404 && !this.hasRealRoute(req) && !this.isExcluded(req.url)) {
         this.handleSuspicious(req);
       }
     });
@@ -123,6 +123,14 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
       mkdirSync(dir, { recursive: true });
       this.logger.log(`Cartella dei log creata: ${dir}`);
     }
+  }
+
+  // Un 404 di una rotta esistente (es. risorsa non trovata) non è una scansione.
+  // Express lascia req.route solo se una rotta ha risposto; Nest 12 con prefisso globale
+  // gestisce gli indirizzi senza rotta con il catch-all '*path', che quindi non conta.
+  private hasRealRoute(req: Request): boolean {
+    const path = (req.route as { path?: unknown } | undefined)?.path;
+    return path !== undefined && path !== "*path";
   }
 
   private isExcluded(url: string): boolean {

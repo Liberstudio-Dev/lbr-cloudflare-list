@@ -2,12 +2,12 @@
 
 Modulo NestJS per il rilevamento e blocco automatico di attacchi tramite Cloudflare IP List.
 
-Ogni richiesta che produce un `404` viene considerata sospetta (tipicamente bot, scanner, enumeratori). L'IP viene risolto tramite ASN lookup per ottenere l'intero range di subnet e bloccarlo direttamente sulla lista Cloudflare WAF. Se il lookup fallisce, viene bloccato il singolo IP.
+Ogni richiesta che produce un `404` su un indirizzo senza nessuna rotta viene considerata sospetta (tipicamente bot, scanner, enumeratori: `/wp-admin`, `/.env`). Il `404` restituito da una rotta esistente (es. `GET /artworks/:id` di una risorsa che non c'è) non viene bloccato. L'IP viene risolto tramite ASN lookup per ottenere l'intero range di subnet e bloccarlo direttamente sulla lista Cloudflare WAF. Se il lookup fallisce, viene bloccato il singolo IP.
 
 ## Come funziona
 
 ```
-Request → 404 rilevato dal middleware
+Request → 404 rilevato dal middleware (solo se nessuna rotta ha risposto)
   └─ IP estratto (cf-connecting-ip / x-real-ip / x-forwarded-for)
        └─ throttle 5s per IP
             └─ log su file (se path non è silentPath)
