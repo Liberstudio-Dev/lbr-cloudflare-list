@@ -93,7 +93,7 @@ export class AttackLoggerMiddleware implements NestMiddleware, OnModuleDestroy {
     }
 
     this.logger.warn(
-      `Provenienza ${ip}: socket=${origin.remoteAddress} host=${origin.host} cf-ray=${origin.cfRay}`,
+      `Provenienza ${ip}: ${req.method} ${this.sanitize(req.originalUrl)} → 404, socket=${origin.remoteAddress} host=${origin.host} cf-ray=${origin.cfRay}`,
     );
 
     this.attSrv.blockIp(ip).catch((err: unknown) => {
