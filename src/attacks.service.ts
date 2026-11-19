@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { firstValueFrom } from "rxjs";
 
-import { CLOUDFLARE_OPTIONS, isAllowedIp, isCloudflareIp, isGoogleBotIp, googleBotOverlapsCidr, normalizeIp } from "./utils";
+import { CLOUDFLARE_OPTIONS, PROTECTED_ASNS, isAllowedIp, isCloudflareIp, isGoogleBotIp, googleBotOverlapsCidr, normalizeIp } from "./utils";
 
 import type { AsnLookupResponse, CloudflareAccount, CloudflareAttacksOptions, CloudflareErrorData, CloudflareResponse } from "./interfaces";
 
@@ -37,7 +37,20 @@ export class AttacksService {
       return null;
     }
 
-    const asnRange = await this.lookupAsnRange(rawIp);
+    const asn = await this.lookupAsn(rawIp);
+
+    // Senza ASN (hackertarget giù o quota esaurita) non si può escludere un ASN protetto
+    if (!asn?.asn) {
+      this.logger.warn(`ASN non disponibile per ${rawIp} — ban saltato`);
+      return null;
+    }
+
+    if (PROTECTED_ASNS[asn.asn]) {
+      this.logger.log(`IP ${rawIp} appartiene a ${PROTECTED_ASNS[asn.asn]} (AS${asn.asn}) — ban saltato`);
+      return null;
+    }
+
+    const asnRange = asn.asn_range ?? null;
 
     if (asnRange && !(await googleBotOverlapsCidr(asnRange))) {
       this.logger.error(`ASN range trovato per ${rawIp}: ${asnRange} — blocco intera subnet`);
@@ -117,12 +130,12 @@ export class AttacksService {
     });
   }
 
-  private async lookupAsnRange(ip: string): Promise<string | null> {
+  private async lookupAsn(ip: string): Promise<AsnLookupResponse | null> {
     try {
       const response = await firstValueFrom(
         this.httpService.get<AsnLookupResponse>(`${this.ASN_LOOKUP_URL}/?q=${ip}&output=json`),
       );
-      return response.data?.asn_range ?? null;
+      return response.data ?? null;
     } catch {
       return null;
     }

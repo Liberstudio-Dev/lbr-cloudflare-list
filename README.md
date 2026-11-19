@@ -2,7 +2,7 @@
 
 Modulo NestJS per il rilevamento e blocco automatico di attacchi tramite Cloudflare IP List.
 
-Ogni richiesta che produce un `404` su un indirizzo senza nessuna rotta viene considerata sospetta (tipicamente bot, scanner, enumeratori: `/wp-admin`, `/.env`). Il `404` restituito da una rotta esistente (es. `GET /artworks/:id` di una risorsa che non c'è) non viene bloccato. L'IP viene risolto tramite ASN lookup per ottenere l'intero range di subnet e bloccarlo direttamente sulla lista Cloudflare WAF. Se il lookup fallisce, viene bloccato il singolo IP.
+Ogni richiesta che produce un `404` su un indirizzo senza nessuna rotta viene considerata sospetta (tipicamente bot, scanner, enumeratori: `/wp-admin`, `/.env`). Il `404` restituito da una rotta esistente (es. `GET /artworks/:id` di una risorsa che non c'è) non viene bloccato. L'IP viene risolto tramite ASN lookup per ottenere l'intero range di subnet e bloccarlo direttamente sulla lista Cloudflare WAF. Se il lookup fallisce, il ban viene saltato.
 
 ## Come funziona
 
@@ -14,8 +14,10 @@ Request → 404 rilevato dal middleware (solo se nessuna rotta ha risposto)
                  └─ allowedIps? → skip (log only)
                       └─ IP Cloudflare? → skip (log only)
                            └─ ASN lookup su api.hackertarget.com
-                                ├─ range trovato → blocca intera subnet su Cloudflare
-                                └─ fallback      → blocca singolo IP /32 o /128
+                                ├─ lookup fallito         → skip (log only)
+                                ├─ ASN protetto           → skip (log only)
+                                ├─ range trovato          → blocca intera subnet su Cloudflare
+                                └─ range tocca Googlebot  → blocca singolo IP /32 o /128
 ```
 
 ### Filtraggio automatico
@@ -23,6 +25,11 @@ Request → 404 rilevato dal middleware (solo se nessuna rotta ha risposto)
 Il modulo ignora automaticamente:
 - IP nella whitelist `allowedIps` (configurazione statica)
 - IP appartenenti ai range ufficiali Cloudflare (scaricati e cachati 24h)
+- IP degli ASN protetti (`PROTECTED_ASNS`):
+  - Cloudflare 13335 e 209242, Google 15169. Servono per gli IP che le liste ufficiali non coprono, per esempio il DNS 1.1.1.1. Google Cloud (AS396982) non è protetto, perché da lì arrivano molti scanner.
+  - Provider italiani (`ITALIAN_ISP_ASNS`): TIM 3269, Vodafone 30722, Fastweb 12874, WindTre 1267, Iliad 29447, Tiscali 8612.
+
+  Il controllo usa l'ASN lookup. Se hackertarget non risponde, o la quota gratuita giornaliera è esaurita, il ban viene saltato: non si può escludere che l'IP appartenga a un ASN protetto.
 - IP privati (10.x, 192.168.x, 172.16–31.x)
 - Loopback (127.0.0.1, ::1)
 - IPv4-mapped IPv6 (::ffff:x.x.x.x → convertiti in IPv4)
