@@ -11,12 +11,13 @@ export const ITALIAN_ISP_ASNS: Record<string, string> = {
 };
 
 /**
- * ASN mai bannati. Cloudflare e Google servono perché le liste ips-v4/v6 e quelle dei crawler
- * non coprono tutti i loro IP (es. 1.1.1.1). Google Cloud (AS396982) NON è qui: da lì arrivano molti scanner.
+ * ASN mai bannati. Cloudflare serve perché ips-v4/v6 coprono solo il proxy, non 1.1.1.1 né le uscite
+ * WARP / iCloud Private Relay (104.28.x, 2a09:bac0::/29), da cui arrivano utenti veri.
+ * Google (AS15169) NON è qui: annuncia anche range GCP da cui arrivano scanner; i crawler sono
+ * protetti da isGoogleBotIp / googleBotOverlapsCidr.
  */
 export const PROTECTED_ASNS: Record<string, string> = {
   '13335': 'Cloudflare',
   '209242': 'Cloudflare',
-  '15169': 'Google',
   ...ITALIAN_ISP_ASNS,
 };

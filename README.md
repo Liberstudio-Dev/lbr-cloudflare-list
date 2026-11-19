@@ -26,7 +26,10 @@ Il modulo ignora automaticamente:
 - IP nella whitelist `allowedIps` (configurazione statica)
 - IP appartenenti ai range ufficiali Cloudflare (scaricati e cachati 24h)
 - IP degli ASN protetti (`PROTECTED_ASNS`):
-  - Cloudflare 13335 e 209242, Google 15169. Servono per gli IP che le liste ufficiali non coprono, per esempio il DNS 1.1.1.1. Google Cloud (AS396982) non è protetto, perché da lì arrivano molti scanner.
+  - Cloudflare 13335 e 209242. Servono per gli IP Cloudflare che `ips-v4`/`ips-v6` non coprono:
+    - il DNS 1.1.1.1;
+    - le uscite di WARP / iCloud Private Relay (104.28.x, `2a09:bac0::/29`), da cui arrivano utenti veri.
+  - Google non è protetto per ASN, perché i range GCP (AS396982, ma anche parte di AS15169) sono una fonte frequente di scanner. I crawler sono esclusi dai controlli dedicati: le liste ufficiali di Googlebot, il reverse DNS e il ban del solo IP singolo quando il range ASN tocca Googlebot.
   - Provider italiani (`ITALIAN_ISP_ASNS`): TIM 3269, Vodafone 30722, Fastweb 12874, WindTre 1267, Iliad 29447, Tiscali 8612.
 
   Il controllo usa l'ASN lookup. Se hackertarget non risponde, o la quota gratuita giornaliera è esaurita, il ban viene saltato: non si può escludere che l'IP appartenga a un ASN protetto.
